@@ -1,10 +1,10 @@
 /* Shows a visible message if anything fails, so the page is never silently blank. */
 window.addEventListener('error',function(e){
   var a=document.getElementById('app');
-  if(!a||a.querySelector('.top'))return;
-  var d=document.createElement('div');
+  if(!a||a.querySelector('.page-head'))return;
+  var d=document.createElement('p');
   d.className='boot';
-  d.textContent='Something went wrong while starting the portal: '+(e&&e.message?e.message:'unknown error');
+  d.textContent='Something went wrong while starting PracticeGuru: '+(e&&e.message?e.message:'unknown error');
   a.innerHTML='';
   a.appendChild(d);
 });
@@ -255,12 +255,14 @@ M(`Why is the market queue lab a discrete event simulation?`,`The system state c
 ];
 
 /* ---------- course registry ---------- */
+var POST_BASE='https://bim-writer.lovestoblog.com/system/post.php?id=';
+var BIM_HOME='https://bim-writer.lovestoblog.com/system/index.php';
 var COURSES=[
- {id:'ai',code:'CSC 406',name:'Artificial Intelligence',color:'#1D4ED8',qs:AI,focus:'Lecture notes, search, knowledge representation, ML, NLP and the Gbagyi assignment.'},
- {id:'net',code:'CSC 404',name:'Network Design and Management',color:'#0F766E',qs:NET,focus:'Transmission media, topology, life cycle, implementation, QoS and FCAPS.'},
- {id:'sim',code:'CSC 408',name:'Modelling and Simulation',color:'#BE123C',qs:SIM,focus:'Definitions, paradigms, building blocks, the 12 steps and the market lab.'},
- {id:'fa',code:'CSC 402',name:'Finite Automata',color:'#B45309',qs:FA,focus:'DFA, NFA, ε-NFA, subset construction and minimization. Redo the tables on paper too.'},
- {id:'spm',code:'CSC 410',name:'Software Project Management',color:'#7C3AED',qs:SPM,focus:'SPMS, terms, constraints, risk, requirements gathering and PM roles.'}
+ {id:'ai',code:'CSC 406',name:'Artificial Intelligence',post:71,qs:AI,focus:'Lecture notes, search, knowledge representation, machine learning, NLP and the Gbagyi assignment.'},
+ {id:'net',code:'CSC 404',name:'Network Design and Management',post:72,qs:NET,focus:'Transmission media, topology, the life cycle, implementation, QoS and FCAPS.'},
+ {id:'sim',code:'CSC 408',name:'Modelling and Simulation',post:75,qs:SIM,focus:'Definitions, paradigms, building blocks, the 12 steps and the market lab.'},
+ {id:'fa',code:'CSC 402',name:'Finite Automata',post:74,qs:FA,focus:'DFA, NFA, epsilon-NFA, subset construction and minimization.'},
+ {id:'spm',code:'CSC 410',name:'Software Project Management',post:73,qs:SPM,focus:'SPMS, key terms, constraints, risk, requirements gathering and PM roles.'}
 ];
 COURSES.forEach(function(c){c.qs.forEach(function(q,i){q.id=c.id+'-'+i;q.course=c.id;});});
 var BYID={}, BYCOURSE={};
@@ -268,9 +270,14 @@ COURSES.forEach(function(c){BYCOURSE[c.id]=c;c.qs.forEach(function(q){BYID[q.id]
 var TOTALQ=COURSES.reduce(function(n,c){return n+c.qs.length;},0);
 
 /* ---------- storage ---------- */
-var KEY='examPortal.v1';
-var store={stats:{},missed:{},plan:{},theme:'auto'};
-function load(){try{var r=localStorage.getItem(KEY);if(r){var o=JSON.parse(r);store.stats=o.stats||{};store.missed=o.missed||{};store.plan=o.plan||{};store.theme=o.theme||'auto';}}catch(e){}}
+var KEY='practiceGuru.v1', OLDKEY='examPortal.v1';
+var store={stats:{},missed:{},plan:{}};
+function load(){
+  try{
+    var r=localStorage.getItem(KEY)||localStorage.getItem(OLDKEY);
+    if(r){var o=JSON.parse(r);store.stats=o.stats||{};store.missed=o.missed||{};store.plan=o.plan||{};}
+  }catch(e){}
+}
 function save(){try{localStorage.setItem(KEY,JSON.stringify(store));}catch(e){}}
 
 /* ---------- helpers ---------- */
@@ -278,64 +285,115 @@ function $(id){return document.getElementById(id);}
 function esc(s){return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');}
 function shuffle(a){a=a.slice();for(var i=a.length-1;i>0;i--){var j=Math.floor(Math.random()*(i+1));var t=a[i];a[i]=a[j];a[j]=t;}return a;}
 function fmt(ms){ms=Math.max(0,ms);var s=Math.ceil(ms/1000),m=Math.floor(s/60);s=s%60;return (m<10?'0':'')+m+':'+(s<10?'0':'')+s;}
-function toast(msg){var t=document.createElement('div');t.className='toast';t.textContent=msg;document.body.appendChild(t);setTimeout(function(){t.remove();},2200);}
-function applyTheme(){document.documentElement.setAttribute('data-theme',store.theme);}
+function toast(msg){var t=document.createElement('div');t.className='pg-toast';t.setAttribute('role','status');t.textContent=msg;document.body.appendChild(t);setTimeout(function(){t.remove();},2400);}
 function allMissedIds(){var out=[];Object.keys(store.missed).forEach(function(k){(store.missed[k]||[]).forEach(function(id){if(BYID[id])out.push(id);});});return out;}
 function missedCount(cid){return (store.missed[cid]||[]).filter(function(id){return BYID[id];}).length;}
 var TYPE_LABEL={mcq:'Multiple choice',tf:'True or false',multi:'Select all that apply',order:'Put in order'};
 
+/* ---------- theme (same behaviour as BIM Writer) ---------- */
+function currentTheme(){
+  var t=document.documentElement.getAttribute('data-theme');
+  if(t==='light'||t==='dark')return t;
+  return (window.matchMedia&&window.matchMedia('(prefers-color-scheme: dark)').matches)?'dark':'light';
+}
+function toggleTheme(){
+  var n=currentTheme()==='dark'?'light':'dark';
+  document.documentElement.setAttribute('data-theme',n);
+  try{localStorage.setItem('theme',n);}catch(e){}
+}
+
 /* ---------- dashboard ---------- */
+var tab='courses';
 var PLAN=[
- {d:1,id:'ai',t:'CSC 406 Artificial Intelligence',s:'The biggest course. Take the quiz, then read the explanations you missed.'},
- {d:2,id:'net',t:'CSC 404 Network Design and Management',s:'Memorise the six phases and FCAPS, then quiz.'},
+ {d:1,id:'ai',t:'CSC 406 Artificial Intelligence',s:'The biggest course. Take the quiz, then read the explanations for what you missed.'},
+ {d:2,id:'net',t:'CSC 404 Network Design and Management',s:'Learn the six phases and FCAPS, then take the quiz.'},
  {d:3,id:'sim',t:'CSC 408 Modelling and Simulation',s:'Know the 12 steps in order and the four paradigms.'},
- {d:4,id:'fa',t:'CSC 402 Finite Automata',s:'Quiz first, then redo one subset construction and one minimization on paper.'},
+ {d:4,id:'fa',t:'CSC 402 Finite Automata',s:'Take the quiz, then redo one subset construction and one minimization on paper.'},
  {d:5,id:'spm',t:'CSC 410 Software Project Management',s:'Definitions, constraints, risk and requirements gathering.'},
  {d:6,id:'mixed',t:'Mixed mock exam',s:'Questions from all five courses in one timed run.'},
  {d:7,id:'missed',t:'Missed questions, then a final mixed run',s:'Clear your missed bank, then finish with a mixed exam.'}
 ];
+
+function stat(v,l){return '<div class="pg-stat"><b>'+v+'</b><span>'+l+'</span></div>';}
+
+function courseRow(c){
+  var s=store.stats[c.id]||{attempts:0,best:0,last:0};
+  var m=missedCount(c.id);
+  var h='<article class="story"><div class="story-main">';
+  h+='<div class="story-byline"><span class="badge badge-primary">'+c.code+'</span><span class="dot"></span><span>'+c.qs.length+' questions</span><span class="dot"></span><span>'+(s.attempts?('Best score '+s.best+'%'):'Not started')+'</span></div>';
+  h+='<h3 class="story-title">'+esc(c.name)+'</h3>';
+  h+='<p class="story-excerpt">'+esc(c.focus)+'</p>';
+  h+='<div class="pg-meter" role="img" aria-label="Best score '+s.best+' percent"><i style="width:'+s.best+'%"></i></div>';
+  h+='<div class="pg-actions"><button class="btn btn-primary btn-sm" data-act="setup" data-id="'+c.id+'">Start quiz</button>';
+  if(m)h+='<button class="btn btn-outline btn-sm" data-act="setup-missed" data-id="'+c.id+'">Retry missed ('+m+')</button>';
+  h+='<a class="btn btn-ghost btn-sm" href="'+POST_BASE+c.post+'" target="_blank" rel="noopener">Study post</a>';
+  h+='</div></div></article>';
+  return h;
+}
+
+function paneCourses(){
+  var h='<div class="story-list">';
+  COURSES.forEach(function(c){h+=courseRow(c);});
+  var miss=allMissedIds().length;
+  h+='<article class="story"><div class="story-main"><div class="story-byline"><span class="badge badge-accent">All courses</span><span class="dot"></span><span>'+TOTALQ+' questions</span></div>';
+  h+='<h3 class="story-title">Mixed mock exam</h3><p class="story-excerpt">Random questions from all five courses, like a full revision session.</p>';
+  h+='<div class="pg-actions" style="margin-top:var(--space-4)"><button class="btn btn-contrast btn-sm" data-act="setup" data-id="mixed">Start mixed exam</button>';
+  if(miss)h+='<button class="btn btn-outline btn-sm" data-act="setup" data-id="missed">Practise all missed ('+miss+')</button>';
+  h+='</div></div></article></div>';
+  return h;
+}
+
+function panePlan(){
+  var done=PLAN.filter(function(p){return store.plan['d'+p.d];}).length;
+  var h='<p class="pg-note">'+done+' of 7 days done. Tick a day when you finish it.</p><div class="story-list">';
+  PLAN.forEach(function(p){
+    var d=!!store.plan['d'+p.d];
+    h+='<article class="story pg-day'+(d?' is-done':'')+'"><label class="pg-check"><input type="checkbox" data-act="plan" data-d="'+p.d+'" '+(d?'checked':'')+' aria-label="Mark day '+p.d+' done"></label>';
+    h+='<div class="story-main"><div class="story-byline"><span>Day '+p.d+'</span></div><h3 class="story-title">'+esc(p.t)+'</h3><p class="story-excerpt">'+esc(p.s)+'</p>';
+    h+='<div class="pg-actions" style="margin-top:var(--space-3)"><button class="btn btn-outline btn-sm" data-act="setup" data-id="'+p.id+'">Start</button></div></div></article>';
+  });
+  return h+'</div>';
+}
+
+function paneMissed(){
+  var miss=allMissedIds().length;
+  if(!miss){
+    return '<div class="empty-state"><span class="empty-icon"><i class="fas fa-seedling" aria-hidden="true"></i></span><h3>Nothing missed yet</h3><p>Questions you get wrong are saved here, so you can practise them again until they stick.</p><div class="empty-actions"><button class="btn btn-primary" data-act="tab" data-v="courses">Start a quiz</button></div></div>';
+  }
+  var h='<div class="pg-actions" style="margin:var(--space-4) 0"><button class="btn btn-primary btn-sm" data-act="setup" data-id="missed">Practise all missed ('+miss+')</button></div><div class="story-list">';
+  COURSES.forEach(function(c){
+    var m=missedCount(c.id);if(!m)return;
+    h+='<article class="story"><div class="story-main"><div class="story-byline"><span class="badge badge-primary">'+c.code+'</span><span class="dot"></span><span>'+m+' to revisit</span></div><h3 class="story-title">'+esc(c.name)+'</h3>';
+    h+='<div class="pg-actions" style="margin-top:var(--space-3)"><button class="btn btn-outline btn-sm" data-act="setup-missed" data-id="'+c.id+'">Practise these</button></div></div></article>';
+  });
+  return h+'</div>';
+}
 
 function renderDashboard(){
   var best=[],attempted=0;
   COURSES.forEach(function(c){var s=store.stats[c.id];if(s&&s.attempts){attempted++;best.push(s.best);}});
   var avg=attempted?Math.round(best.reduce(function(a,b){return a+b;},0)/COURSES.length):0;
   var miss=allMissedIds().length;
-  var days=PLAN.filter(function(p){return store.plan['d'+p.d];}).length;
-  var h='';
-  h+='<div class="top"><div><h1>Exam prep portal</h1><p class="sub">Five 400 level courses, '+TOTALQ+' practice questions. Pick a course, take a timed quiz, and read the explanation after every answer.</p></div>';
-  h+='<button class="ghost" data-act="theme" aria-label="Change theme">Theme: '+({auto:'Auto',light:'Light',dark:'Dark'})[store.theme]+'</button></div>';
-  h+='<section class="ready" aria-label="Overall readiness"><div class="big">'+avg+'%</div><div class="txt"><b>Overall readiness</b><span>'+(attempted?'Average of your best scores across all five courses.':'Take a quiz in each course to build this score.')+' '+attempted+' of 5 courses attempted, '+miss+' missed questions waiting.</span><div class="bar"><i style="width:'+avg+'%"></i></div></div></section>';
-  h+='<h2 class="sec">Courses</h2>';
-  COURSES.forEach(function(c){
-    var s=store.stats[c.id]||{attempts:0,best:0,last:0};
-    var m=missedCount(c.id);
-    h+='<article class="course" style="--c:'+c.color+'"><div class="stripe"></div><div class="body">';
-    h+='<div class="head"><span class="chip">'+c.code+'</span><h3>'+esc(c.name)+'</h3></div>';
-    h+='<div class="meta">'+c.qs.length+' questions. '+esc(c.focus)+'</div>';
-    h+='<div class="mastery"><div class="bar"><i style="width:'+s.best+'%"></i></div><span class="pct">'+(s.attempts?('Best '+s.best+'%'):'Not started')+'</span></div>';
-    h+='<div class="btns"><button class="btn primary" data-act="setup" data-id="'+c.id+'">Start quiz</button>';
-    if(m)h+='<button class="btn" data-act="setup-missed" data-id="'+c.id+'">Retry missed ('+m+')</button>';
-    h+='</div></div></article>';
-  });
-  h+='<article class="course" style="--c:#475569"><div class="stripe"></div><div class="body"><div class="head"><span class="chip">All</span><h3>Mixed mock exam</h3></div><div class="meta">Random questions from all five courses, like a full revision session.</div><div class="btns"><button class="btn primary" data-act="setup" data-id="mixed">Start mixed exam</button>';
-  if(miss)h+='<button class="btn" data-act="setup" data-id="missed">Practise all missed ('+miss+')</button>';
-  h+='</div></div></article>';
-  h+='<h2 class="sec">7-day plan</h2><details class="plan"'+(days<7?' open':'')+'><summary>Your week <small>'+days+' of 7 days done</small></summary>';
-  PLAN.forEach(function(p){
-    var done=!!store.plan['d'+p.d];
-    h+='<div class="day'+(done?' done':'')+'"><input type="checkbox" data-act="plan" data-d="'+p.d+'" '+(done?'checked':'')+' aria-label="Mark day '+p.d+' done"><div class="d"><b>Day '+p.d+': '+esc(p.t)+'</b><span>'+esc(p.s)+'</span></div><button class="btn" data-act="setup" data-id="'+p.id+'">Start</button></div>';
-  });
-  h+='</details>';
-  h+='<p class="foot">Progress is saved on this device only. Questions come from the CSC 406, 404, 410, 402 and 408 study posts.</p>';
+  var h='<div class="page-head"><h1>Exam practice</h1><p>Timed quizzes built from the BIM Writer study posts. Every answer comes with an explanation.</p></div>';
+  h+='<div class="pg-stats" role="group" aria-label="Your progress">'+stat(avg+'%','Readiness')+stat(TOTALQ,'Questions')+stat(miss,'Missed')+'</div>';
+  var tabs=[['courses','Courses'],['plan','7-day plan'],['missed','Missed'+(miss?' ('+miss+')':'')]];
+  h+='<div class="pg-tabwrap"><div class="segmented pg-tabs" role="tablist" aria-label="Practice sections">';
+  tabs.forEach(function(t){h+='<button role="tab" data-act="tab" data-v="'+t[0]+'" aria-selected="'+(tab===t[0])+'">'+t[1]+'</button>';});
+  h+='</div></div>';
+  h+='<section role="tabpanel">'+(tab==='courses'?paneCourses():tab==='plan'?panePlan():paneMissed())+'</section>';
   $('app').innerHTML=h;
+  var map={courses:'home',plan:'plan',missed:'missed'};
+  document.querySelectorAll('.bottom-nav a[data-nav]').forEach(function(a){
+    if(a.getAttribute('data-nav')===map[tab])a.setAttribute('aria-current','page');else a.removeAttribute('aria-current');
+  });
 }
 
 /* ---------- overlay ---------- */
 var cfg={id:'ai',count:20,perQ:45,shuffle:true,missedOnly:false};
 var S=null;
 
-function showOverlay(){$('overlay').classList.add('open');document.body.style.overflow='hidden';}
-function hideOverlay(){$('overlay').classList.remove('open');document.body.style.overflow='';}
+function showOverlay(){$('overlay').classList.add('open');document.body.classList.add('pg-lock');}
+function hideOverlay(){$('overlay').classList.remove('open');document.body.classList.remove('pg-lock');}
 function setSheet(html){$('sheet').innerHTML=html;}
 
 function poolFor(id,missedOnly){
@@ -354,34 +412,36 @@ function titleFor(id){
 
 function openSetup(id,missedOnly){
   var pool=poolFor(id,false);
-  if(!pool.length){toast('No questions here yet.');return;}
+  if(!pool.length){toast('Nothing to practise here yet.');return;}
   cfg.id=id;cfg.shuffle=true;cfg.perQ=45;cfg.missedOnly=!!missedOnly;
   var n=poolFor(id,cfg.missedOnly).length;
   cfg.count=id==='mixed'?Math.min(30,n):Math.min(20,n);
   renderSetup();showOverlay();
 }
+function chip(act,v,label,on){return '<button class="chip" data-act="'+act+'" data-v="'+v+'" aria-pressed="'+on+'">'+label+'</button>';}
 function renderSetup(){
   var pool=poolFor(cfg.id,cfg.missedOnly),n=pool.length;
   var opts=[10,20,30,50].filter(function(x){return x<n;});
-  var h='<div class="sheet-in"><h2>'+esc(titleFor(cfg.id))+'</h2><p class="lead">Set up your session. You get instant feedback and an explanation after every answer.</p>';
-  h+='<div class="field"><span class="lab">Number of questions</span><div class="seg" role="group" aria-label="Number of questions">';
-  opts.forEach(function(x){h+='<button data-act="count" data-v="'+x+'" aria-pressed="'+(cfg.count===x)+'">'+x+'</button>';});
-  h+='<button data-act="count" data-v="all" aria-pressed="'+(cfg.count==='all'||cfg.count>=n)+'">All ('+n+')</button></div></div>';
-  h+='<div class="field"><span class="lab">Time per question</span><div class="seg" role="group" aria-label="Time per question">';
-  [[30,'30 seconds'],[45,'45 seconds'],[60,'60 seconds'],[0,'Untimed']].forEach(function(p){h+='<button data-act="perq" data-v="'+p[0]+'" aria-pressed="'+(cfg.perQ===p[0])+'">'+p[1]+'</button>';});
+  var allOn=(cfg.count==='all'||cfg.count>=n);
+  var h='<div class="pg-body"><h2 class="pg-setup-title">'+esc(titleFor(cfg.id))+'</h2><p class="pg-lead">Choose how you want to practise. You get an explanation after every answer.</p>';
+  h+='<div class="form-group"><span class="form-label">Number of questions</span><div class="pg-chips" role="group" aria-label="Number of questions">';
+  opts.forEach(function(x){h+=chip('count',x,x,cfg.count===x);});
+  h+=chip('count','all','All ('+n+')',allOn)+'</div></div>';
+  h+='<div class="form-group"><span class="form-label">Time per question</span><div class="pg-chips" role="group" aria-label="Time per question">';
+  [[30,'30 seconds'],[45,'45 seconds'],[60,'60 seconds'],[0,'Untimed']].forEach(function(p){h+=chip('perq',p[0],p[1],cfg.perQ===p[0]);});
   h+='</div></div>';
-  h+='<label class="check"><input type="checkbox" data-act="shuffle" '+(cfg.shuffle?'checked':'')+'> Shuffle question order</label>';
-  if(cfg.id!=='missed'&&poolFor(cfg.id,true).length)h+='<label class="check"><input type="checkbox" data-act="missedonly" '+(cfg.missedOnly?'checked':'')+'> Only questions I missed before ('+poolFor(cfg.id,true).length+')</label>';
-  var cnt=(cfg.count==='all'||cfg.count>=n)?n:cfg.count;
-  h+='<div class="summary"><b>'+cnt+' questions</b>'+(cfg.perQ?(', <b>'+fmt(cnt*cfg.perQ*1000)+'</b> total time. The exam ends automatically when time runs out.'):', no time limit. The clock counts up.')+'</div>';
-  h+='<button class="btn primary block" data-act="start">Start exam</button><div style="height:10px"></div><button class="btn block" data-act="close">Back to dashboard</button></div>';
+  h+='<label class="pg-opt-check"><input type="checkbox" data-act="shuffle" '+(cfg.shuffle?'checked':'')+'> Shuffle question order</label>';
+  if(cfg.id!=='missed'&&poolFor(cfg.id,true).length)h+='<label class="pg-opt-check"><input type="checkbox" data-act="missedonly" '+(cfg.missedOnly?'checked':'')+'> Only questions I missed before ('+poolFor(cfg.id,true).length+')</label>';
+  var cnt=allOn?n:cfg.count;
+  h+='<div class="pg-sum"><b>'+cnt+' questions</b>'+(cfg.perQ?(', <b>'+fmt(cnt*cfg.perQ*1000)+'</b> in total. The exam ends automatically when time runs out.'):', no time limit. The clock counts up.')+'</div></div>';
+  h+='<div class="pg-foot"><button class="btn btn-ghost" data-act="close">Cancel</button><button class="btn btn-primary" data-act="start">Start exam</button></div>';
   setSheet(h);
 }
 
 /* ---------- quiz ---------- */
 function prep(q){
   var c=BYCOURSE[q.course];
-  var p={id:q.id,t:q.t,q:q.q,e:q.e,course:q.course,code:c.code,color:c.color};
+  var p={id:q.id,t:q.t,q:q.q,e:q.e,course:q.course,code:c.code};
   if(q.t==='order'){
     var sh;do{sh=shuffle(q.items);}while(q.items.length>1&&sh.join('|')===q.items.join('|'));
     p.pool=sh;p.correct=q.items.slice();
@@ -405,19 +465,21 @@ function startQuiz(custom){
   var list=base.map(prep),n2=list.length,now=Date.now();
   S={id:cfg.id,list:list,i:0,score:0,answers:[],perQ:cfg.perQ,total:cfg.perQ*n2,startedAt:now,
      deadline:cfg.perQ?now+cfg.perQ*n2*1000:0,locked:false,sel:[],seq:[],done:false,timerId:null,filter:'all'};
-  setSheet('<div class="qbar"><button class="x" data-act="exit" aria-label="Exit exam">&times;</button><span class="ct" id="ct"></span><span class="sc" id="sc"></span><span class="sp"></span><span class="timer" id="timer" role="timer" aria-label="Time">00:00</span></div><div class="prog"><i id="prog"></i></div><div class="sheet-in" id="qbody"></div>');
+  setSheet('<div class="pg-head"><button class="btn btn-ghost btn-icon btn-sm" data-act="exit" aria-label="Exit exam"><span aria-hidden="true" style="font-size:1.4rem;line-height:1">&times;</span></button><div><div class="count" id="ct"></div><div class="score" id="sc"></div></div><span class="grow"></span><span class="pg-timer" id="timer" role="timer" aria-label="Time"><span id="tv">00:00</span></span></div><div class="pg-progress"><i id="prog"></i></div><div class="pg-body" id="qbody"></div><div class="pg-foot" id="act"></div>');
   S.timerId=setInterval(tick,250);tick();
   renderQuestion();
 }
 function tick(){
   if(!S||S.done)return;
-  var t=$('timer');if(!t)return;
+  var t=$('timer'),tv=$('tv');if(!t||!tv)return;
   var ms;
-  if(S.deadline){ms=S.deadline-Date.now();if(ms<=0){finish(true);return;}
+  if(S.deadline){
+    ms=S.deadline-Date.now();
+    if(ms<=0){finish(true);return;}
     var frac=ms/(S.total*1000);
-    t.className='timer'+((ms<30000||frac<.1)?' danger':(frac<.25?' warn':''));
+    t.className='pg-timer'+((ms<30000||frac<.1)?' danger':(frac<.25?' warn':''));
   }else ms=Date.now()-S.startedAt;
-  t.textContent=fmt(ms);
+  tv.textContent=fmt(ms);
 }
 function updateBar(){
   var answered=S.answers.filter(Boolean).length;
@@ -428,40 +490,41 @@ function updateBar(){
 function renderQuestion(){
   var q=S.list[S.i];S.locked=false;S.sel=[];S.seq=[];
   updateBar();
-  var h='<div class="qmeta"><span class="chip" style="--c:'+q.color+'">'+q.code+'</span><span>'+TYPE_LABEL[q.t]+'</span></div>';
-  h+='<h2 class="qtext">'+esc(q.q)+'</h2><div id="area"></div><div id="fb" role="status" aria-live="polite"></div><div class="actions" id="act"></div>';
-  h+='<p class="hint" id="hint"></p>';
+  var h='<div class="pg-meta"><span class="badge badge-primary">'+q.code+'</span><span>'+TYPE_LABEL[q.t]+'</span></div>';
+  h+='<h2 class="pg-q">'+esc(q.q)+'</h2><div id="area"></div><div id="fb" role="status" aria-live="polite"></div><p class="pg-hint" id="hint"></p>';
   $('qbody').innerHTML=h;$('qbody').scrollTop=0;
   if(q.t==='order')renderOrder();else renderOptions();
 }
 function renderOptions(){
-  var q=S.list[S.i],h='<div class="opts">';
-  q.o.forEach(function(o,k){h+='<button class="opt" data-act="opt" data-k="'+k+'"><span class="k">'+(k+1)+'</span><span>'+esc(o)+'</span></button>';});
+  var q=S.list[S.i],h='<div class="pg-opts">';
+  q.o.forEach(function(o,k){h+='<button class="pg-opt" data-act="opt" data-k="'+k+'"><span class="n">'+(k+1)+'</span><span>'+esc(o)+'</span></button>';});
   h+='</div>';$('area').innerHTML=h;
   if(q.t==='multi'){
-    $('act').innerHTML='<button class="btn primary" data-act="check" id="chk" disabled>Check answer</button>';
+    $('act').innerHTML='<button class="btn btn-primary btn-lg" data-act="check" id="chk" disabled>Check answer</button>';
     $('hint').textContent='Tap every correct option, then check your answer.';
-  }else $('hint').textContent='Tap an answer. Keyboard: press 1 to '+q.o.length+'.';
+  }else{
+    $('act').innerHTML='<span class="pg-foot-note">Tap an answer to continue</span>';
+    $('hint').innerHTML='<span class="kb">Keyboard: press 1 to '+q.o.length+' to answer.</span>';
+  }
 }
 function renderOrder(){
-  var q=S.list[S.i],h='<ol class="slot">';
+  var q=S.list[S.i],h='<ol class="pg-slots">';
   for(var i=0;i<q.pool.length;i++){
-    if(S.seq[i]!==undefined)h+='<li><button class="chipbtn" data-act="unplace" data-p="'+i+'">'+esc(q.pool[S.seq[i]])+'</button></li>';
-    else h+='<li><div class="ph">'+(i===S.seq.length?'Tap the next item below':'')+'</div></li>';
+    if(S.seq[i]!==undefined)h+='<li><button class="pg-placed" data-act="unplace" data-p="'+i+'">'+esc(q.pool[S.seq[i]])+'</button></li>';
+    else h+='<li><div class="pg-slot">'+(i===S.seq.length?'Tap the next item below':'')+'</div></li>';
   }
-  h+='</ol><div class="pool"><span class="lab">Items</span>';
-  q.pool.forEach(function(it,k){if(S.seq.indexOf(k)===-1)h+='<button data-act="place" data-k="'+k+'">'+esc(it)+'</button>';});
+  h+='</ol><div class="pg-pool"><span class="lab">Items</span>';
+  q.pool.forEach(function(it,k){if(S.seq.indexOf(k)===-1)h+='<button class="chip pg-chip" data-act="place" data-k="'+k+'">'+esc(it)+'</button>';});
   h+='</div>';
   $('area').innerHTML=h;
-  $('act').innerHTML='<button class="btn primary" data-act="check" id="chk" '+(S.seq.length===q.pool.length?'':'disabled')+'>Check order</button><button class="btn" data-act="reset">Reset</button>';
+  $('act').innerHTML='<button class="btn btn-ghost btn-lg" data-act="reset">Reset</button><button class="btn btn-primary btn-lg" data-act="check" id="chk" '+(S.seq.length===q.pool.length?'':'disabled')+'>Check order</button>';
   $('hint').textContent='Tap items in the correct order. Tap a placed item to remove it.';
 }
 function pickOption(k){
   if(S.locked)return;var q=S.list[S.i];
   if(q.t==='multi'){
     var at=S.sel.indexOf(k);if(at>-1)S.sel.splice(at,1);else S.sel.push(k);
-    var btns=document.querySelectorAll('.opt');
-    btns.forEach(function(b,i){b.classList.toggle('sel',S.sel.indexOf(i)>-1);});
+    document.querySelectorAll('.pg-opt').forEach(function(b,i){b.classList.toggle('sel',S.sel.indexOf(i)>-1);});
     $('chk').disabled=S.sel.length===0;
   }else{S.sel=[k];evaluate();}
 }
@@ -471,14 +534,13 @@ function evaluate(){
   if(q.t==='order'){
     var seqText=S.seq.map(function(k){return q.pool[k];});
     ok=seqText.join('|')===q.correct.join('|');yours=seqText.join(' > ');right=q.correct.join(' > ');
-    var items=document.querySelectorAll('.chipbtn');
-    items.forEach(function(b,i){b.disabled=true;b.classList.add(seqText[i]===q.correct[i]?'correct':'wrong');});
-    document.querySelectorAll('.pool,#act .btn:not(#chk)').forEach(function(n){n.style.display='none';});
+    document.querySelectorAll('.pg-placed').forEach(function(b,i){b.disabled=true;b.classList.add(seqText[i]===q.correct[i]?'correct':'wrong');});
+    var pl=document.querySelector('.pg-pool');if(pl)pl.style.display='none';
   }else{
     var sel=S.sel.slice().sort(),ans=q.ans.slice().sort();
     ok=sel.join(',')===ans.join(',');
     yours=sel.map(function(k){return q.o[k];}).join('; ');right=ans.map(function(k){return q.o[k];}).join('; ');
-    document.querySelectorAll('.opt').forEach(function(b,i){
+    document.querySelectorAll('.pg-opt').forEach(function(b,i){
       var isAns=q.ans.indexOf(i)>-1,isSel=S.sel.indexOf(i)>-1;
       b.disabled=true;b.classList.remove('sel');
       if(isAns&&isSel)b.classList.add('correct');
@@ -488,13 +550,12 @@ function evaluate(){
   }
   if(ok)S.score++;
   S.answers[S.i]={ok:ok,yours:yours,right:right};
-  var fb='<div class="fb '+(ok?'ok':'no')+'"><b class="t">'+(ok?'Correct':'Not quite')+'</b>';
-  if(!ok)fb+='<p class="ans">Correct answer: '+esc(right)+'</p>';
-  fb+='<p class="why">'+esc(q.e)+'</p></div>';
-  $('fb').innerHTML=fb;
+  var fb='<div class="alert '+(ok?'alert-success':'alert-error')+'"><i class="fas '+(ok?'fa-circle-check':'fa-circle-xmark')+'" aria-hidden="true"></i><div><strong>'+(ok?'Correct':'Not quite')+'</strong>'+(ok?'':'<div class="pg-correct">Correct answer: '+esc(right)+'</div>')+'</div></div>';
+  fb+='<blockquote class="pg-why">'+esc(q.e)+'</blockquote>';
+  $('fb').innerHTML='<div class="pg-fb">'+fb+'</div>';
   var last=S.i===S.list.length-1;
-  $('act').innerHTML='<button class="btn primary" data-act="next" id="nx">'+(last?'See results':'Next question')+'</button>';
-  $('hint').textContent='Press Enter to continue.';
+  $('act').innerHTML='<button class="btn btn-primary btn-lg" data-act="next" id="nx">'+(last?'See results':'Next question')+'</button>';
+  var kb=document.querySelector('.pg-hint');if(kb)kb.innerHTML='<span class="kb">Press Enter to continue.</span>';
   updateBar();
   $('nx').focus({preventScroll:true});
   $('fb').scrollIntoView({block:'nearest',behavior:'smooth'});
@@ -509,15 +570,14 @@ function finish(timeUp){
   if(!S||S.done)return;
   S.done=true;clearInterval(S.timerId);
   var n=S.list.length,correct=S.score;
-  var answered=S.answers.filter(Boolean).length;
   var pct=Math.round(correct/n*100);
   S.pct=pct;S.timeUp=!!timeUp;
   S.elapsed=Math.min(Date.now()-S.startedAt,S.deadline?S.total*1000:Infinity);
-  /* save stats and missed bank */
-  var st=store.stats[S.id]||{attempts:0,best:0,last:0};
-  st.attempts++;st.last=pct;st.best=Math.max(st.best,pct);
-  if(S.id!=='missed')store.stats[S.id]=st;
-  else if(store.stats.missed)delete store.stats.missed;
+  if(S.id!=='missed'){
+    var st=store.stats[S.id]||{attempts:0,best:0,last:0};
+    st.attempts++;st.last=pct;st.best=Math.max(st.best,pct);
+    store.stats[S.id]=st;
+  }
   S.list.forEach(function(q,i){
     var a=S.answers[i];if(!a)return;
     var arr=store.missed[q.course]||[];var at=arr.indexOf(q.id);
@@ -528,39 +588,41 @@ function finish(timeUp){
   renderResults();
 }
 function grade(p){
-  if(p>=80)return ['Exam ready','You know this material. Keep revising the questions you missed.'];
-  if(p>=60)return ['Solid progress','Good base. Read the explanations for the misses and retry.'];
+  if(p>=80)return ['Exam ready','You know this material. Keep going over the questions you missed.'];
+  if(p>=60)return ['Solid progress','Good base. Read the explanations for the misses, then retry.'];
   if(p>=40)return ['Needs more work','Go back to the study post for the topics you missed, then retry.'];
-  return ['Start with the basics','Read the course post again, then take the quiz untimed.'];
+  return ['Start with the basics','Read the study post again, then take the quiz untimed.'];
 }
 function renderResults(){
   var n=S.list.length,answered=S.answers.filter(Boolean).length,wrong=answered-S.score,skipped=n-answered;
   var g=grade(S.pct),C=2*Math.PI*54;
-  var h='<div class="sheet-in"><h2>'+(S.timeUp?'Time is up':'Exam complete')+'</h2><p class="lead">'+esc(titleFor(S.id))+'</p>';
-  h+='<div class="rs"><div class="ring"><svg width="132" height="132" viewBox="0 0 132 132" aria-hidden="true"><circle class="tr" cx="66" cy="66" r="54"></circle><circle class="fg" id="fg" cx="66" cy="66" r="54" stroke-dasharray="'+C+'" stroke-dashoffset="'+C+'"></circle></svg><div class="n">'+S.pct+'%</div></div>';
-  h+='<div class="info"><h2>'+g[0]+'</h2><p class="lead" style="margin:0">'+g[1]+'</p><div class="stats"><div><b>'+S.score+' of '+n+'</b><span>Correct</span></div><div><b>'+wrong+'</b><span>Incorrect</span></div>'+(skipped?'<div><b>'+skipped+'</b><span>Unanswered</span></div>':'')+'<div><b>'+fmt(S.elapsed)+'</b><span>Time used</span></div></div></div></div>';
-  h+='<div class="btns"><button class="btn primary" data-act="review">Review answers</button>';
-  if(wrong+skipped>0)h+='<button class="btn" data-act="retry-wrong">Retry the '+(wrong+skipped)+' I missed</button>';
-  h+='<button class="btn" data-act="retake">Retake</button><button class="btn" data-act="close">Dashboard</button></div></div>';
+  var h='<div class="pg-body"><p class="pg-lead" style="margin-bottom:var(--space-2)">'+esc(titleFor(S.id))+'</p><h2 class="pg-setup-title">'+(S.timeUp?'Time is up':'Exam complete')+'</h2>';
+  h+='<div class="pg-result"><div class="pg-ring"><svg width="132" height="132" viewBox="0 0 132 132" aria-hidden="true"><circle class="tr" cx="66" cy="66" r="54"></circle><circle class="fg" id="fg" cx="66" cy="66" r="54" stroke-dasharray="'+C+'" stroke-dashoffset="'+C+'"></circle></svg><div class="n">'+S.pct+'%</div></div>';
+  h+='<div class="pg-grade"><h3>'+g[0]+'</h3><p>'+g[1]+'</p><div class="pg-nums"><div><b>'+S.score+' of '+n+'</b><span>Correct</span></div><div><b>'+wrong+'</b><span>Incorrect</span></div>'+(skipped?'<div><b>'+skipped+'</b><span>Unanswered</span></div>':'')+'<div><b>'+fmt(S.elapsed)+'</b><span>Time used</span></div></div></div></div></div>';
+  h+='<div class="pg-foot pg-foot-wrap"><button class="btn btn-primary" data-act="review">Review answers</button>';
+  if(wrong+skipped>0)h+='<button class="btn btn-outline" data-act="retry-wrong">Retry the '+(wrong+skipped)+' I missed</button>';
+  h+='<button class="btn btn-ghost" data-act="retake">Retake</button><button class="btn btn-ghost" data-act="close">Done</button></div>';
   setSheet(h);
   var fg=$('fg');if(fg){requestAnimationFrame(function(){requestAnimationFrame(function(){fg.style.strokeDashoffset=C*(1-S.pct/100);});});}
 }
 function renderReview(){
-  var h='<div class="sheet-in"><h2>Review answers</h2><p class="lead">'+esc(titleFor(S.id))+', '+S.pct+'%</p>';
-  h+='<div class="filters"><button class="ghost" data-act="filter" data-v="all" aria-pressed="'+(S.filter==='all')+'">All</button><button class="ghost" data-act="filter" data-v="wrong" aria-pressed="'+(S.filter==='wrong')+'">Missed only</button></div>';
+  var h='<div class="pg-body"><h2 class="pg-setup-title">Review answers</h2><p class="pg-lead">'+esc(titleFor(S.id))+', '+S.pct+'%</p>';
+  h+='<div class="segmented pg-tabs" role="group" aria-label="Filter"><button data-act="filter" data-v="all" aria-selected="'+(S.filter==='all')+'">All</button><button data-act="filter" data-v="wrong" aria-selected="'+(S.filter==='wrong')+'">Missed only</button></div><div class="story-list" style="margin-top:var(--space-4)">';
   var shown=0;
   S.list.forEach(function(q,i){
     var a=S.answers[i];
     if(S.filter==='wrong'&&a&&a.ok)return;
     shown++;
-    var cls=!a?'na':(a.ok?'ok':'no'),lab=!a?'Not answered':(a.ok?'Correct':'Incorrect');
+    var cls=!a?'badge-accent':(a.ok?'badge-success':'badge-danger'),lab=!a?'Not answered':(a.ok?'Correct':'Incorrect');
     var right=a?a.right:(q.t==='order'?q.correct.join(' > '):q.ans.map(function(k){return q.o[k];}).join('; '));
-    h+='<div class="rv"><div class="st '+cls+'">'+(i+1)+'. '+lab+'</div><div class="qq">'+esc(q.q)+'</div>';
-    if(a)h+='<div class="ln"><span>Your answer:</span> '+esc(a.yours)+'</div>';
-    h+='<div class="ln"><span>Correct answer:</span> '+esc(right)+'</div><div class="ex">'+esc(q.e)+'</div></div>';
+    h+='<article class="story"><div class="story-main"><div class="story-byline"><span class="badge '+cls+'">'+lab+'</span><span class="dot"></span><span>Question '+(i+1)+'</span></div>';
+    h+='<h3 class="story-title pg-rv-title">'+esc(q.q)+'</h3>';
+    if(a)h+='<p class="pg-rv-line"><span>Your answer</span> '+esc(a.yours)+'</p>';
+    h+='<p class="pg-rv-line"><span>Correct answer</span> '+esc(right)+'</p><blockquote class="pg-why">'+esc(q.e)+'</blockquote></div></article>';
   });
-  if(!shown)h+='<p class="lead">Nothing missed here. Nice work.</p>';
-  h+='<div class="btns"><button class="btn primary" data-act="back-results">Back to results</button><button class="btn" data-act="close">Dashboard</button></div></div>';
+  h+='</div>';
+  if(!shown)h+='<p class="pg-lead" style="margin-top:var(--space-4)">Nothing missed here. Nice work.</p>';
+  h+='</div><div class="pg-foot"><button class="btn btn-primary" data-act="back-results">Back to results</button><button class="btn btn-ghost" data-act="close">Done</button></div>';
   setSheet(h);
 }
 function retryWrong(){
@@ -571,8 +633,8 @@ function retryWrong(){
 }
 function exitConfirm(){
   if($('confirm'))return;
-  var d=document.createElement('div');d.className='confirm';d.id='confirm';
-  d.innerHTML='<div class="box"><h3>Leave this exam?</h3><p>Your answers in this attempt will not be saved.</p><div class="btns"><button class="btn primary" data-act="stay">Keep going</button><button class="btn" data-act="leave">Leave exam</button></div></div>';
+  var d=document.createElement('div');d.className='pg-confirm';d.id='confirm';
+  d.innerHTML='<div class="box" role="alertdialog" aria-labelledby="cfT"><h3 id="cfT">Leave this exam?</h3><p>Your answers in this attempt will not be saved.</p><div class="pg-actions"><button class="btn btn-primary" data-act="stay">Keep going</button><button class="btn btn-outline" data-act="leave">Leave exam</button></div></div>';
   $('sheet').appendChild(d);
 }
 function leave(){if(S){clearInterval(S.timerId);S.done=true;}closeAll();}
@@ -582,8 +644,11 @@ function closeAll(){hideOverlay();setSheet('');S=null;renderDashboard();}
 document.addEventListener('click',function(ev){
   var el=ev.target.closest('[data-act]');if(!el)return;
   var act=el.getAttribute('data-act'),id=el.getAttribute('data-id'),v=el.getAttribute('data-v');
+  if(el.tagName==='A'&&el.getAttribute('href')==='#')ev.preventDefault();
   switch(act){
-    case 'theme':store.theme=({auto:'light',light:'dark',dark:'auto'})[store.theme];save();applyTheme();renderDashboard();break;
+    case 'theme':toggleTheme();break;
+    case 'home':ev.preventDefault();tab='courses';renderDashboard();window.scrollTo(0,0);break;
+    case 'tab':tab=v;renderDashboard();break;
     case 'plan':if(el.checked)store.plan['d'+el.getAttribute('data-d')]=true;else delete store.plan['d'+el.getAttribute('data-d')];save();renderDashboard();break;
     case 'setup':openSetup(id,false);break;
     case 'setup-missed':openSetup(id,true);break;
@@ -622,5 +687,5 @@ document.addEventListener('keydown',function(ev){
   if(q.t!=='order'&&!S.locked&&/^[1-9]$/.test(ev.key)){var k=parseInt(ev.key,10)-1;if(k<q.o.length)pickOption(k);}
 });
 
-load();applyTheme();renderDashboard();
+load();renderDashboard();
 })();
