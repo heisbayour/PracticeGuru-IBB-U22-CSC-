@@ -1,18 +1,127 @@
 <!DOCTYPE html>
-<html lang="en" data-theme="auto">
+<html lang="en" data-theme="">
 <head>
 <meta charset="utf-8">
-<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<meta name="color-scheme" content="light dark">
-<title>Exam Prep Portal - 400 Level Computer Science</title>
-<link rel="stylesheet" href="styles.css?v=1">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<title>BIM Writer's PracticeGuru</title>
+<meta name="description" content="BIM Writer's PracticeGuru: timed practice quizzes for IBBUL Computer Science 400 level courses, built from BIM Writer study posts.">
+<meta name="theme-color" content="#ffffff" media="(prefers-color-scheme: light)">
+<meta name="theme-color" content="#000000" media="(prefers-color-scheme: dark)">
+<link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='9' fill='%23006b2b'/%3E%3Cpath d='M16 6.5 L11 17.5 L16 25.5 L21 17.5 Z' fill='%23fff'/%3E%3Ccircle cx='16' cy='16.5' r='1.9' fill='%23006b2b'/%3E%3Cpath d='M16 18.4 V24' stroke='%23006b2b' stroke-width='1.3'/%3E%3C/svg%3E">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=DM+Sans:opsz,wght@9..40,400;9..40,500;9..40,600;9..40,700&family=Lora:ital,wght@0,400;0,500;0,600;1,400&family=Playfair+Display:ital,wght@0,600;0,700;0,800;1,700&display=swap">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+<script>
+  /* Same theme behaviour as BIM Writer: apply a saved choice before first paint,
+     otherwise follow the device setting. */
+  (function () {
+    var root = document.documentElement, theme = null;
+    try { theme = localStorage.getItem('theme'); } catch (e) {}
+    if (theme === 'light' || theme === 'dark') { root.setAttribute('data-theme', theme); }
+    else { root.removeAttribute('data-theme'); }
+  })();
+</script>
+<link rel="stylesheet" href="styles.css?v=2">
 </head>
-<body>
-<div class="wrap" id="app">
-  <p class="boot"><b>Loading the exam portal.</b> If this message stays on screen, app.js did not load. Check that index.html, styles.css and app.js are in the same folder.</p>
-</div>
+<body class="has-bottom-nav">
+<a class="skip-link" href="#site-main">Skip to content</a>
+
+<header id="header" class="app-header">
+  <nav class="container navbar" aria-label="Main">
+    <a href="#" class="nav-brand" data-act="home" aria-label="BIM Writer's PracticeGuru home">
+      <svg class="brand-mark" viewBox="0 0 32 32" aria-hidden="true">
+        <rect width="32" height="32" rx="9" fill="var(--primary)"/>
+        <path d="M16 6.5 L11 17.5 L16 25.5 L21 17.5 Z" fill="var(--on-primary)"/>
+        <circle cx="16" cy="16.5" r="1.9" fill="var(--primary)"/>
+        <path d="M16 18.4 V24" stroke="var(--primary)" stroke-width="1.3"/>
+      </svg>
+      <span class="brand-text"><span class="brand-by">BIM Writer's</span><span class="brand-name">PracticeGuru</span></span>
+    </a>
+    <div class="nav-actions">
+      <a class="nav-write" href="https://bim-writer.lovestoblog.com/system/index.php" target="_blank" rel="noopener"><i class="fas fa-feather-pointed" aria-hidden="true"></i><span>BIM Writer</span></a>
+      <button type="button" class="theme-toggle" data-act="theme" aria-label="Toggle dark mode">
+        <svg class="sun-moon" viewBox="0 0 24 24" aria-hidden="true">
+          <mask id="themeMoonMask">
+            <rect x="0" y="0" width="24" height="24" fill="#fff"/>
+            <circle class="moon-cut" cx="17" cy="7" r="6" fill="#000"/>
+          </mask>
+          <circle class="sun-core" cx="12" cy="12" r="9" mask="url(#themeMoonMask)" fill="currentColor"/>
+          <g class="sun-rays" stroke="currentColor" stroke-width="2" stroke-linecap="round">
+            <line x1="12" y1="1.5" x2="12" y2="3.5"/>
+            <line x1="12" y1="20.5" x2="12" y2="22.5"/>
+            <line x1="1.5" y1="12" x2="3.5" y2="12"/>
+            <line x1="20.5" y1="12" x2="22.5" y2="12"/>
+            <line x1="4.6" y1="4.6" x2="6" y2="6"/>
+            <line x1="18" y1="18" x2="19.4" y2="19.4"/>
+            <line x1="4.6" y1="19.4" x2="6" y2="18"/>
+            <line x1="18" y1="6" x2="19.4" y2="4.6"/>
+          </g>
+        </svg>
+      </button>
+    </div>
+  </nav>
+</header>
+
+<main id="site-main" tabindex="-1">
+  <div class="container-feed" id="app">
+    <p class="boot"><b>Loading BIM Writer's PracticeGuru.</b> If this message stays on screen, app.js did not load. Check that index.html, styles.css and app.js are in the same folder.</p>
+  </div>
+</main>
+
+<footer id="footer" class="site-footer">
+  <div class="container">
+    <div class="footer-grid">
+      <div class="footer-section footer-about">
+        <a href="#" class="nav-brand footer-brand" data-act="home" aria-label="BIM Writer's PracticeGuru home">
+          <svg class="brand-mark" viewBox="0 0 32 32" aria-hidden="true">
+            <rect width="32" height="32" rx="9" fill="var(--primary)"/>
+            <path d="M16 6.5 L11 17.5 L16 25.5 L21 17.5 Z" fill="var(--on-primary)"/>
+            <circle cx="16" cy="16.5" r="1.9" fill="var(--primary)"/>
+            <path d="M16 18.4 V24" stroke="var(--primary)" stroke-width="1.3"/>
+          </svg>
+          <span class="brand-text"><span class="brand-by">BIM Writer's</span><span class="brand-name">PracticeGuru</span></span>
+        </a>
+        <p class="footer-text">Free exam practice from BIM Writer, a calm place to write, publish and discover stories from the IBBUL Computer Science community.</p>
+        <address class="footer-text footer-contact">
+          <span><i class="fas fa-location-dot" aria-hidden="true"></i> IBBU Lapai, Niger State, Nigeria</span>
+          <a href="mailto:bimwriterofficial@gmail.com"><i class="far fa-envelope" aria-hidden="true"></i> bimwriterofficial@gmail.com</a>
+        </address>
+      </div>
+      <div class="footer-section">
+        <h2 class="footer-title">Study posts</h2>
+        <ul class="footer-links">
+          <li><a href="https://bim-writer.lovestoblog.com/system/post.php?id=71" target="_blank" rel="noopener">CSC 406 Artificial Intelligence</a></li>
+          <li><a href="https://bim-writer.lovestoblog.com/system/post.php?id=72" target="_blank" rel="noopener">CSC 404 Network Design</a></li>
+          <li><a href="https://bim-writer.lovestoblog.com/system/post.php?id=75" target="_blank" rel="noopener">CSC 408 Modelling and Simulation</a></li>
+          <li><a href="https://bim-writer.lovestoblog.com/system/post.php?id=74" target="_blank" rel="noopener">CSC 402 Finite Automata</a></li>
+          <li><a href="https://bim-writer.lovestoblog.com/system/post.php?id=73" target="_blank" rel="noopener">CSC 410 Project Management</a></li>
+        </ul>
+      </div>
+      <div class="footer-section">
+        <h2 class="footer-title">BIM Writer</h2>
+        <ul class="footer-links">
+          <li><a href="https://bim-writer.lovestoblog.com/system/index.php" target="_blank" rel="noopener">Home</a></li>
+          <li><a href="https://bim-writer.lovestoblog.com/system/index.php?feed=discover" target="_blank" rel="noopener">Discover</a></li>
+          <li><a href="https://bim-writer.lovestoblog.com/system/search.php" target="_blank" rel="noopener">Search</a></li>
+          <li><a href="https://bim-writer.lovestoblog.com/system/docs.php" target="_blank" rel="noopener">Help and docs</a></li>
+        </ul>
+      </div>
+    </div>
+    <div class="copyrights"><p>&copy; 2026 BIM Writer, IBBUL Computer Science Department. Progress is saved on this device only.</p></div>
+  </div>
+</footer>
+
+<nav class="bottom-nav" aria-label="Quick navigation">
+  <a href="#" data-act="tab" data-v="courses" data-nav="home"><i class="fas fa-house" aria-hidden="true"></i><span>Practice</span></a>
+  <a href="#" data-act="tab" data-v="plan" data-nav="plan"><i class="fas fa-calendar-check" aria-hidden="true"></i><span>Plan</span></a>
+  <a href="#" class="bottom-nav-write" data-act="setup" data-id="mixed"><span class="bottom-nav-write-icon"><i class="fas fa-shuffle" aria-hidden="true"></i></span><span>Mixed</span></a>
+  <a href="#" data-act="tab" data-v="missed" data-nav="missed"><i class="fas fa-rotate-left" aria-hidden="true"></i><span>Missed</span></a>
+</nav>
+
 <div class="overlay" id="overlay" role="dialog" aria-modal="true" aria-label="Quiz"><div class="sheet" id="sheet"></div></div>
-<noscript><p class="boot">This portal needs JavaScript turned on to run.</p></noscript>
-<script src="app.js?v=1"></script>
+
+<noscript><p class="boot container-feed">This page needs JavaScript turned on to run.</p></noscript>
+<script src="app.js?v=2"></script>
 </body>
 </html>
