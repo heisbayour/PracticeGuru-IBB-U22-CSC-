@@ -1,0 +1,240 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="auto">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="color-scheme" content="light dark">
+<title>Exam Prep Portal - 400 Level Computer Science</title>
+<style>
+:root{
+  --bg:#F5F7FA; --surface:#FFFFFF; --ink:#18212F; --muted:#5B6678; --line:#DDE3EC;
+  --primary:#1D4ED8; --primary-ink:#FFFFFF; --primary-soft:#E6EEFF;
+  --good:#157347; --good-soft:#E3F4EA; --bad:#B42318; --bad-soft:#FDE8E6;
+  --warn:#B25E09; --warn-soft:#FDF0DC; --shadow:0 1px 2px rgba(16,24,40,.06),0 8px 24px rgba(16,24,40,.08);
+}
+@media (prefers-color-scheme:dark){
+  :root[data-theme="auto"]{
+    --bg:#0E131B; --surface:#161D28; --ink:#E7ECF3; --muted:#9AA6B8; --line:#273141;
+    --primary:#7AA2FF; --primary-ink:#0B1220; --primary-soft:#1B2740;
+    --good:#4CC38A; --good-soft:#12301F; --bad:#FF8A80; --bad-soft:#3A1916;
+    --warn:#F2B25C; --warn-soft:#3A2A10; --shadow:0 1px 2px rgba(0,0,0,.4),0 8px 24px rgba(0,0,0,.4);
+  }
+}
+:root[data-theme="dark"]{
+  --bg:#0E131B; --surface:#161D28; --ink:#E7ECF3; --muted:#9AA6B8; --line:#273141;
+  --primary:#7AA2FF; --primary-ink:#0B1220; --primary-soft:#1B2740;
+  --good:#4CC38A; --good-soft:#12301F; --bad:#FF8A80; --bad-soft:#3A1916;
+  --warn:#F2B25C; --warn-soft:#3A2A10; --shadow:0 1px 2px rgba(0,0,0,.4),0 8px 24px rgba(0,0,0,.4);
+}
+*{box-sizing:border-box}
+html{-webkit-text-size-adjust:100%}
+body{margin:0;background:var(--bg);color:var(--ink);
+  font:16px/1.55 system-ui,-apple-system,"Segoe UI",Roboto,"Helvetica Neue",Arial,sans-serif;
+  padding:env(safe-area-inset-top) env(safe-area-inset-right) env(safe-area-inset-bottom) env(safe-area-inset-left)}
+button{font:inherit;color:inherit;cursor:pointer}
+:focus-visible{outline:3px solid var(--primary);outline-offset:2px}
+.wrap{max-width:860px;margin:0 auto;padding:22px 16px 64px}
+
+/* header */
+.top{display:flex;align-items:flex-start;justify-content:space-between;gap:12px}
+h1{margin:0;font-size:1.75rem;line-height:1.2;font-weight:650;letter-spacing:-.015em}
+.sub{margin:6px 0 0;color:var(--muted);max-width:52ch}
+.ghost{background:transparent;border:1px solid var(--line);border-radius:10px;padding:8px 12px;min-height:40px;color:var(--muted)}
+.ghost:hover{border-color:var(--primary);color:var(--ink)}
+
+/* readiness */
+.ready{margin:22px 0 8px;padding:18px;background:var(--surface);border:1px solid var(--line);border-radius:14px;display:flex;gap:18px;align-items:center;flex-wrap:wrap}
+.ready .big{font-size:2.4rem;font-weight:700;letter-spacing:-.03em;line-height:1;min-width:3.4ch}
+.ready .txt{flex:1;min-width:200px}
+.ready .txt b{display:block;font-size:1rem}
+.ready .txt span{color:var(--muted);font-size:.92rem}
+.bar{height:8px;background:var(--line);border-radius:99px;overflow:hidden;margin-top:10px}
+.bar>i{display:block;height:100%;background:var(--primary);border-radius:99px;width:0}
+
+h2.sec{font-size:1.05rem;font-weight:650;margin:28px 0 10px}
+
+/* plan */
+details.plan{background:var(--surface);border:1px solid var(--line);border-radius:14px;padding:4px 16px}
+details.plan summary{cursor:pointer;padding:12px 0;font-weight:600;list-style:none;display:flex;justify-content:space-between;align-items:center}
+details.plan summary::-webkit-details-marker{display:none}
+details.plan summary small{color:var(--muted);font-weight:400}
+.day{display:flex;align-items:center;gap:12px;padding:10px 0;border-top:1px solid var(--line)}
+.day input{width:22px;height:22px;accent-color:var(--primary);flex:none}
+.day .d{flex:1;min-width:0}
+.day .d b{display:block}
+.day .d span{color:var(--muted);font-size:.9rem}
+.day.done .d b{text-decoration:line-through;color:var(--muted)}
+
+/* course rows */
+.course{display:grid;grid-template-columns:6px 1fr;background:var(--surface);border:1px solid var(--line);border-radius:14px;overflow:hidden;margin-bottom:12px}
+.course .stripe{background:var(--c)}
+.course .body{padding:16px;display:flex;flex-direction:column;gap:12px}
+.course .head{display:flex;gap:10px;align-items:baseline;flex-wrap:wrap}
+.chip{display:inline-block;background:var(--c,var(--primary));color:#fff;border-radius:7px;padding:2px 9px;font-size:.82rem;font-weight:650}
+.course h3{margin:0;font-size:1.15rem;font-weight:650;letter-spacing:-.01em}
+.course .meta{color:var(--muted);font-size:.9rem}
+.mastery{display:flex;align-items:center;gap:10px}
+.mastery .bar{flex:1;margin:0}
+.mastery .bar>i{background:var(--c)}
+.mastery .pct{font-variant-numeric:tabular-nums;font-size:.9rem;color:var(--muted);min-width:7.5ch;text-align:right}
+.btns{display:flex;gap:8px;flex-wrap:wrap}
+
+.btn{border:1.5px solid var(--line);background:var(--surface);border-radius:10px;padding:10px 16px;min-height:44px;font-weight:600}
+.btn:hover{border-color:var(--primary)}
+.btn.primary{background:var(--primary);border-color:var(--primary);color:var(--primary-ink)}
+.btn.primary:hover{filter:brightness(1.07)}
+.btn:disabled{opacity:.45;cursor:not-allowed}
+.btn.block{width:100%}
+
+/* overlay */
+.overlay{position:fixed;inset:0;background:rgba(8,12,20,.6);display:none;z-index:50;align-items:center;justify-content:center;padding:0}
+.overlay.open{display:flex}
+.sheet{background:var(--bg);width:100%;height:100%;display:flex;flex-direction:column;position:relative;overflow:hidden}
+@media (min-width:760px){
+  .overlay{padding:24px}
+  .sheet{max-width:740px;height:auto;min-height:min(620px,94vh);max-height:94vh;border-radius:18px;box-shadow:var(--shadow);border:1px solid var(--line)}
+}
+.sheet-in{overflow-y:auto;flex:1;min-height:0;padding:20px 18px calc(24px + env(safe-area-inset-bottom))}
+.sheet h2{margin:0 0 4px;font-size:1.35rem;letter-spacing:-.01em}
+.sheet p.lead{margin:0 0 18px;color:var(--muted)}
+
+/* setup */
+.field{margin:16px 0}
+.field>label,.field>.lab{display:block;font-weight:600;margin-bottom:8px}
+.seg{display:flex;gap:8px;flex-wrap:wrap}
+.seg button{border:1.5px solid var(--line);background:var(--surface);border-radius:10px;padding:9px 14px;min-height:42px}
+.seg button[aria-pressed="true"]{border-color:var(--primary);background:var(--primary-soft);font-weight:650}
+.check{display:flex;gap:10px;align-items:center;padding:6px 0}
+.check input{width:20px;height:20px;accent-color:var(--primary)}
+.summary{background:var(--surface);border:1px solid var(--line);border-radius:12px;padding:12px 14px;margin:18px 0;color:var(--muted)}
+.summary b{color:var(--ink)}
+
+/* quiz bar */
+.qbar{display:flex;align-items:center;gap:10px;padding:12px 14px;background:var(--surface);border-bottom:1px solid var(--line);flex-wrap:wrap}
+.qbar .x{border:1px solid var(--line);background:transparent;border-radius:9px;min-width:40px;min-height:40px;font-size:1.1rem;line-height:1}
+.qbar .ct{font-weight:650}
+.qbar .sc{color:var(--muted);font-size:.92rem}
+.qbar .sp{flex:1}
+.timer{font-variant-numeric:tabular-nums;font-weight:700;border:1.5px solid var(--line);border-radius:10px;padding:6px 12px;min-width:5.6ch;text-align:center}
+.timer.warn{border-color:var(--warn);color:var(--warn);background:var(--warn-soft)}
+.timer.danger{border-color:var(--bad);color:var(--bad);background:var(--bad-soft)}
+.prog{height:4px;background:var(--line)}
+.prog>i{display:block;height:100%;background:var(--primary);width:0;transition:width .25s}
+
+.qmeta{display:flex;gap:10px;align-items:center;color:var(--muted);font-size:.88rem;margin-bottom:10px}
+.qtext{font-size:1.2rem;line-height:1.4;font-weight:600;margin:0 0 18px;letter-spacing:-.005em}
+.opts{display:flex;flex-direction:column;gap:10px}
+.opt{display:flex;gap:12px;align-items:flex-start;width:100%;text-align:left;padding:13px 14px;border:1.5px solid var(--line);border-radius:12px;background:var(--surface);min-height:52px}
+.opt .k{flex:none;width:26px;height:26px;border-radius:7px;border:1.5px solid var(--line);display:grid;place-items:center;font-size:.8rem;color:var(--muted);margin-top:1px}
+.opt:hover:not(:disabled){border-color:var(--primary)}
+.opt.sel{border-color:var(--primary);background:var(--primary-soft)}
+.opt.sel .k{border-color:var(--primary);color:var(--primary)}
+.opt.correct{border-color:var(--good);background:var(--good-soft)}
+.opt.correct .k{border-color:var(--good);color:var(--good)}
+.opt.wrong{border-color:var(--bad);background:var(--bad-soft)}
+.opt.wrong .k{border-color:var(--bad);color:var(--bad)}
+.opt.missed{border-style:dashed;border-color:var(--good)}
+.opt:disabled{cursor:default}
+
+.slot{margin:0;padding:0;list-style:none;display:flex;flex-direction:column;gap:8px;counter-reset:s}
+.slot li{counter-increment:s;display:flex;gap:10px;align-items:center;min-height:48px}
+.slot li::before{content:counter(s);flex:none;width:26px;height:26px;border-radius:50%;background:var(--primary-soft);color:var(--primary);display:grid;place-items:center;font-size:.8rem;font-weight:700}
+.slot .ph{flex:1;border:1.5px dashed var(--line);border-radius:10px;padding:10px 12px;color:var(--muted);font-size:.92rem;min-height:44px;display:flex;align-items:center}
+.chipbtn{flex:1;text-align:left;border:1.5px solid var(--primary);background:var(--primary-soft);border-radius:10px;padding:10px 12px;min-height:44px}
+.chipbtn.correct{border-color:var(--good);background:var(--good-soft)}
+.chipbtn.wrong{border-color:var(--bad);background:var(--bad-soft)}
+.pool{display:flex;flex-wrap:wrap;gap:8px;margin-top:16px;padding-top:14px;border-top:1px solid var(--line)}
+.pool .lab{width:100%;color:var(--muted);font-size:.88rem}
+.pool button{border:1.5px solid var(--line);background:var(--surface);border-radius:10px;padding:10px 12px;text-align:left;min-height:44px}
+.pool button:hover{border-color:var(--primary)}
+
+.fb{margin-top:18px;padding:14px 16px;border-radius:12px;border-left:4px solid}
+.fb.ok{background:var(--good-soft);border-color:var(--good)}
+.fb.no{background:var(--bad-soft);border-color:var(--bad)}
+.fb b.t{display:block;margin-bottom:4px}
+.fb.ok b.t{color:var(--good)}
+.fb.no b.t{color:var(--bad)}
+.fb .ans{margin:6px 0 0;font-weight:600}
+.fb .why{margin:8px 0 0}
+.actions{display:flex;gap:10px;margin-top:18px;flex-wrap:wrap}
+.hint{color:var(--muted);font-size:.85rem;margin-top:12px}
+
+/* results */
+.rs{display:flex;gap:22px;align-items:center;flex-wrap:wrap;background:var(--surface);border:1px solid var(--line);border-radius:16px;padding:20px;margin:6px 0 16px}
+.ring{width:132px;height:132px;flex:none;position:relative}
+.ring svg{transform:rotate(-90deg)}
+.ring .n{position:absolute;inset:0;display:grid;place-items:center;font-size:1.9rem;font-weight:750;letter-spacing:-.03em}
+.ring circle{fill:none;stroke-width:11}
+.ring .tr{stroke:var(--line)}
+.ring .fg{stroke:var(--primary);stroke-linecap:round;transition:stroke-dashoffset .9s ease-out}
+.rs .info{flex:1;min-width:200px}
+.rs .info h2{margin:0 0 4px}
+.stats{display:flex;gap:18px;flex-wrap:wrap;margin-top:10px}
+.stats div{min-width:64px}
+.stats b{display:block;font-size:1.25rem;font-variant-numeric:tabular-nums}
+.stats span{color:var(--muted);font-size:.85rem}
+.rv{background:var(--surface);border:1px solid var(--line);border-radius:14px;padding:14px 16px;margin-bottom:12px}
+.rv .st{font-weight:700;font-size:.9rem}
+.rv .st.ok{color:var(--good)} .rv .st.no{color:var(--bad)} .rv .st.na{color:var(--warn)}
+.rv .qq{font-weight:600;margin:4px 0 8px}
+.rv .ln{font-size:.93rem;margin:3px 0}
+.rv .ln span{color:var(--muted)}
+.rv .ex{margin-top:8px;padding-top:8px;border-top:1px solid var(--line);font-size:.93rem}
+.filters{display:flex;gap:8px;margin:12px 0}
+.filters .ghost[aria-pressed="true"]{border-color:var(--primary);color:var(--ink);background:var(--primary-soft)}
+
+.confirm{position:absolute;inset:0;background:rgba(8,12,20,.55);display:flex;align-items:center;justify-content:center;padding:20px;z-index:5}
+.confirm .box{background:var(--surface);border:1px solid var(--line);border-radius:14px;padding:20px;max-width:380px;width:100%;box-shadow:var(--shadow)}
+.confirm h3{margin:0 0 6px}
+.confirm p{margin:0 0 16px;color:var(--muted)}
+.toast{position:fixed;left:50%;bottom:calc(24px + env(safe-area-inset-bottom));transform:translateX(-50%);background:var(--ink);color:var(--bg);padding:10px 16px;border-radius:10px;z-index:80;font-size:.92rem}
+.foot{margin-top:36px;color:var(--muted);font-size:.85rem}
+@media (prefers-reduced-motion:reduce){*{transition:none!important;animation:none!important}}
+</style>
+</head>
+<body>
+<div class="wrap" id="app"></div>
+<div class="overlay" id="overlay" role="dialog" aria-modal="true" aria-label="Quiz"><div class="sheet" id="sheet"></div></div>
+
+<script>
+(function(){
+'use strict';
+
+/* ---------- question builders ----------
+   M: multiple choice (right answer first, shuffled at run time)
+   T: true or false
+   X: select all that apply (right answers first, shuffled at run time)
+   O: put items in the correct order (listed in the correct order, shuffled at run time) */
+var M=function(q,right,wrong,e){return {t:'mcq',q:q,o:[right].concat(wrong),a:[0],e:e};};
+var X=function(q,right,wrong,e){return {t:'multi',q:q,o:right.concat(wrong),a:right.map(function(_,i){return i;}),e:e};};
+var T=function(q,ans,e){return {t:'tf',q:q,o:['True','False'],a:[ans?0:1],e:e};};
+var O=function(q,items,e){return {t:'order',q:q,items:items,e:e};};
+
+/* ---------- CSC 406: Artificial Intelligence ---------- */
+var AI=[
+M(`Who defined AI in 1956 as the science and engineering of making intelligent machines?`,`John McCarthy`,[`Alan Turing`,`Marvin Minsky`,`Claude Shannon`],`McCarthy gave this definition in 1956, the year of the Dartmouth Conference where the term "Artificial Intelligence" was first used officially.`),
+M(`Which formula summarises what AI needs, according to the course?`,`AI = Algorithm + Data + Computing Power`,[`AI = Hardware + Software + Network`,`AI = Logic + Rules + Memory`,`AI = Data + Storage + Cloud`],`The core formula is AI = Algorithm + Data + Computing Power. Better algorithms, far more data and stronger hardware (especially GPUs) drove the deep learning boom.`),
+M(`Russell and Norvig view AI as the design of what?`,`Rational agents`,[`Expert databases`,`Neural hardware`,`Logic compilers`],`In their definition, AI is the design of rational agents that perceive the environment through sensors, reason, and act through actuators to achieve the best outcome.`),
+M(`In which year did Alan Turing propose the Turing Test?`,`1950`,[`1943`,`1956`,`1966`],`Turing proposed it in 1950 in "Computing Machinery and Intelligence", where he asked "Can machines think?". It was the first formal idea that machine intelligence could be measured.`),
+M(`Where and when was the term "Artificial Intelligence" first officially used?`,`The Dartmouth Conference, 1956`,[`Turing's 1950 paper`,`The MIT AI Lab, 1966`,`The MYCIN project at Stanford, 1970s`],`The Dartmouth Conference (McCarthy, Minsky, Rochester and Shannon) in 1956 marked the birth of AI as an academic field.`),
+M(`Which expert system, built at Stanford, diagnosed bacterial infections?`,`MYCIN`,[`DENDRAL`,`XCON`,`CLIPS`],`MYCIN diagnosed bacterial infections and recommended treatments. DENDRAL analysed chemical structures, XCON configured computers and CLIPS is NASA's rule-based system.`),
+T(`DENDRAL is an expert system used for chemical analysis of molecular structures.`,true,`True. DENDRAL analysed molecular structures. MYCIN was the medical one.`),
+M(`Which milestone happened in 2012 and reduced image recognition error rates dramatically?`,`AlexNet`,[`IBM Watson`,`AlphaGo`,`MYCIN`],`AlexNet (2012) revolutionised image recognition. Watson won Jeopardy! in 2011 and AlphaGo beat a world Go champion in 2016.`),
+M(`AI that does one specific task very well but has no general reasoning ability is called:`,`Weak (Narrow) AI`,[`Strong AI`,`Reactive hardware`,`Fuzzy AI`],`Weak or Narrow AI is specialised. Strong AI aims to perform any intellectual task a human can.`),
+M(`What does Strong AI aim to do?`,`Perform any intellectual task a human can do`,[`Perform one specific task efficiently`,`Store large rule bases only`,`Replace databases`],`Strong AI targets general human-level ability, while Weak AI is limited to specific tasks.`),
+M(`Which agent type acts only on the current percept and ignores history, like a thermostat?`,`Simple reflex agent`,[`Model-based reflex agent`,`Goal-based agent`,`Utility-based agent`],`A simple reflex agent reacts to "now". A thermostat turns the heater on when the temperature is below a set point.`),
+M(`A robot vacuum maps the room so it does not clean the same spot twice. Which agent type is it?`,`Model-based reflex agent`,[`Simple reflex agent`,`Goal-based agent`,`Utility-based agent`],`It keeps track of part of the world's state (the map), which is what makes it model-based.`),
+M(`A GPS that selects a route to reach your destination is which agent type?`,`Goal-based agent`,[`Simple reflex agent`,`Model-based reflex agent`,`Utility-based agent`],`Goal-based agents act to achieve a specific goal, here reaching the destination.`),
+M(`Which agent chooses actions to maximise happiness or satisfaction, not just reach a goal?`,`Utility-based agent`,[`Goal-based agent`,`Simple reflex agent`,`Model-based reflex agent`],`Utility-based agents weigh how good an outcome is. Example: a music recommender that also tries to surprise you with new favourites.`),
+X(`Select the four agent types taught in the course.`,[`Simple reflex`,`Model-based reflex`,`Goal-based`,`Utility-based`],[`Reactive`,`Hybrid`],`The four agent types are simple reflex, model-based reflex, goal-based and utility-based. Reactive, deliberative and hybrid are agent architectures.`),
+M(`An agent that reacts first and then reasons after confirming the situation uses which architecture?`,`Hybrid`,[`Reactive`,`Deliberative`,`Utility-based`],`Hybrid architectures combine reactive speed with deliberative planning: jump first, then run after confirming it is a snake.`),
+M(`Which environment is fully observable?`,`Chess`,[`Driving in fog`,`Poker with hidden cards`,`A football match`],`In chess the agent can see everything relevant. Driving in fog is partially observable.`),
+M(`Rolling a dice is an example of which type of environment?`,`Stochastic`,[`Deterministic`,`Static`,`Discrete and deterministic`],`In a stochastic environment the next state is partly random. Solving a math problem is deterministic.`),
+M(`A football match is an example of which environment type?`,`Dynamic`,[`Static`,`Deterministic`,`Fully observable`],`A dynamic environment changes while the agent is deciding. A crossword puzzle is static.`),
+M(`Controlling a robot arm is an example of which environment type?`,`Continuous`,[`Discrete`,`Static`,`Deterministic`],`Continuous environments have infinitely many possible states. A board game is discrete.`),
+M(`Which is NOT one of the five components of a well-defined search problem?`,`Neural weights`,[`Initial state`,`Transition model`,`Path cost`],`The five components are initial state, actions, transition model, goal test (goal state) and path cost.`),
+M(`Which search explores all nodes at one depth before going deeper?`,`Breadth-First Search (BFS)`,[`Depth-First Search (DFS)`,`Greedy Best-First Search`,`Uniform-Cost Search`],`BFS expands level by level and guarantees the shortest solution when every step costs the same.`),
+M(`Which search follows one path as deep as possible and then backtracks?`,`Depth-First Search (DFS)`,[`Breadth-First Search (BFS)`,`A* Search`,`Uniform-Cost Search`],`DFS may find a solution faster, but not always the best one. Think of following one cave tunnel to the end.`),
+M(`Which uninformed search expands the cheapest node first?`,`Uniform-Cost Search (UCS)`,[`Breadth-First Search`,`Depth-First Search`,`Greedy Best-First Search`],`UCS is useful when path costs differ, like choosing the cheapest flights first.`),
+M(`What is the evaluation function of Greedy Best-First Search?`,`f(n) = h(n)`,[`f(n) = g(n) + h(n)`,`f(n) = g(n)`,`f(n) = g(n) - h(n)`],`GBFS uses only the heuristic. That makes it fast but not optimal.`),
+M(`What is the evaluation function of A* search?`,`f(n) = g(n) + h(n)`,[`f(n) = h(n)`,`f(n) = g(n) x h
